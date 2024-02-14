@@ -20,6 +20,9 @@ def _run_executable(command_pre, executable_path, args):
         # Run the executable with additional arguments
         command = command_pre + [executable_path] + args
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Capture stdout and stderr
+        stdout, stderr = process.communicate()
         
         # Wait for the process to finish and get the return code
         return_code = process.wait()
@@ -30,8 +33,6 @@ def _run_executable(command_pre, executable_path, args):
         else:
             print(f"Executable returned non-zero exit code: {return_code}")
         
-        # Capture stdout and stderr
-        stdout, stderr = process.communicate()
         if stdout:
             print("Standard output:")
             print(stdout.decode())
@@ -45,10 +46,12 @@ def _run_executable(command_pre, executable_path, args):
         print(f"An error occurred: {e}")
 
 def run_executable(executable_path, num_procs, args):
+    print("Running executable")
     command_pre = ['mpirun', '-n', str(num_procs)]
     _run_executable(command_pre, executable_path, args)
 
 def run_exodiff(exodiff_path, args):
+    print("Running exodiff")
     _run_executable([], exodiff_path, args)
 
 def main():
