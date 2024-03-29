@@ -203,8 +203,8 @@ if __name__ == "__main__":
     parser.add_argument('executable_args', type=str, help='Arguments to pass to the executable')
     parser.add_argument('--n', type=int, default=10, help='Number of times to run the executable')
     parser.add_argument('--no-plot', dest='plot', action='store_false', default=True, help='Do not plot the run times')
-    parser.add_argument('--plot-file', type=str, default='benchmark.pdf', help='File to save the plot to')
-    parser.add_argument('--history_plot_file', type=str, default='history.pdf', help='File to save the history plot to')
+    parser.add_argument('--plot-file', type=str, default='benchmark.png', help='File to save the plot to')
+    parser.add_argument('--history_plot_file', type=str, default='history.png', help='File to save the history plot to')
     parser.add_argument('--live-plot', dest='live_plot', action='store_true', default=False, help='Live plot the run times')
     parser.add_argument('--csv', dest='csv', action='store_true', default=False, help='Save the run times to the "runtime.csv" file')
     parser.add_argument('--update-baseline', dest='update_baseline', action='store_true', default=False, help='Update the baseline runtime')
@@ -219,7 +219,7 @@ if __name__ == "__main__":
     if args.update_baseline:
         average_runtime['updated'] = True
 
-    if args.csv:
+    if args.csv or average_runtime['updated']:
         add_to_csv(average_runtime)
 
     if args.plot:
