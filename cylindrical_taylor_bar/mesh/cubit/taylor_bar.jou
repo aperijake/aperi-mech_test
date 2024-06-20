@@ -1,0 +1,19 @@
+journal on
+create cylinder height 0.2346 radius 0.0391
+move surface 2 location 0 0 0 include_merged
+set duplicate block elements off
+undo group begin
+block 1 add volume 1
+undo group end
+undo group begin
+nodeset 1 add surface 2
+undo group end
+volume 1 size 0.01
+volume 1 scheme tetmesh
+mesh volume 1
+save cub5 "taylor_bar.cub5" overwrite journal
+undo group begin
+set exodus netcdf4 off
+set large exodus file on
+export mesh "taylor_bar_0p01.exo" overwrite
+undo group end
