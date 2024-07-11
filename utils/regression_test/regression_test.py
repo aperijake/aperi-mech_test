@@ -3,6 +3,7 @@ import subprocess
 import os
 import sys
 import datetime
+import time
 
 def _log_output(log_file, message):
     with open(log_file, 'a') as f:
@@ -75,6 +76,7 @@ class RegressionTest:
         self.exodiff_results_file = exodiff_results_file
         self.exodiff_gold_results_file = exodiff_gold_results_file
         self.exodiff_args = exodiff_args
+        self.executable_time = 0
 
     def run(self):
         _remove_file('run_test.log')
@@ -100,17 +102,22 @@ class RegressionTest:
         passed = 0
 
         if return_code == 0:
-            print(GREEN + "PASS: " + RESET + self.test_name)
+            print(f"{GREEN}PASS:{RESET}    time(s): {self.executable_time:.4e}    test: {self.test_name:<20}")
             passed = 1
         else:
-            print(RED + "FAIL: " + RESET + self.test_name)
+            print(f"{RED}FAIL:{RESET}    time(s): {self.executable_time:.4e}    test: {self.test_name:<20}")
             print(f"Return code: {return_code}")
 
         return passed
 
     def _run_executable(self):
         command_pre = ['mpirun', '-n', str(self.num_procs)]
-        return _run_executable(command_pre, self.executable_path, self.exe_args, 'run_test.log')
+        # Time the executable
+        start_time = time.perf_counter()
+        return_code = _run_executable(command_pre, self.executable_path, self.exe_args, 'run_test.log')
+        end_time = time.perf_counter()
+        self.executable_time = end_time - start_time
+        return return_code
 
     def _run_exodiff(self):
         return _run_executable([], self.exodiff_path, ['-f', self.exodiff_file, self.exodiff_results_file, self.exodiff_gold_results_file] + self.exodiff_args, 'run_test.log')
