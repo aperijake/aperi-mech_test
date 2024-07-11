@@ -1,4 +1,3 @@
-import sys
 import subprocess
 import gmsh
 import exodus
@@ -38,6 +37,7 @@ def create_gmsh_cylinder(height, radius, mesh_size, out_file_base):
     
     # Save the mesh to a file
     gmsh.write(out_file_base+".msh")
+    gmsh.write(out_file_base+".key")
     
     # Finalize the gmsh API
     gmsh.finalize()
