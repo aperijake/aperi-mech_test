@@ -31,7 +31,7 @@ def _run_executable(command_pre, executable_path, command_args, log_file):
         else:
             error_message = f"Executable returned non-zero exit code: {return_code}"
             error_message += f"\nCommand: {' '.join(command)}"
-            error_message += "\nFAILED"
+            error_message += "\nFAILED\n"
             _log_output(log_file, error_message)
             print(error_message)
         
