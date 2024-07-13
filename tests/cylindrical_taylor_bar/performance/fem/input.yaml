@@ -26,12 +26,12 @@ procedures:
       time_stepper:
         direct_time_stepper:
           time_increment: 0.000000125
-          time_end: 0.000125
+          time_end: 0.0000125
       output:
         file: results.exo
         time_start: 0
         time_end: 1
-        time_increment: 0.000125
+        time_increment: 0.0000125
       boundary_conditions:
         - displacement:
             sets:
