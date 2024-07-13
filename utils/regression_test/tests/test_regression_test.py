@@ -1,40 +1,50 @@
 import os
 import unittest
-from regression_test import RegressionTest
+
+from regression_test import ExodiffCheck, RegressionTest
+
 
 class TestRegressionTest(unittest.TestCase):
 
-	def test_run_executable_fail(self):
-		# Change to the directory where the test files are located
-		os.chdir('tests/test_files')
+    def setUp(self):
+        os.chdir('tests/test_files')
 
-		# Setup
-		test = RegressionTest('fail_test', 'aperi-mech', 1, ['input.yaml'], 'exodiff', 'compare.exodiff', 'results.exo', 'bad_gold.exo', [])
+    def tearDown(self):
+        os.chdir('../..')
 
-		# Execute
-		result = test.run()
+    def test_run_regression_test_fail(self):
+        # Setup
+        test = RegressionTest('fail_test', 'aperi-mech', 1, ['bad_input.yaml'])
 
-		# Verify
-		self.assertFalse(result)
-		
-        # Change back to the original directory
-		os.chdir('../..')
+        # Run the executable and verify the return code
+        result = test.run()
+        self.assertFalse(result == 0)
 
-	def test_run_executable_pass(self):
-		# Change to the directory where the test files are located
-		os.chdir('tests/test_files')
+    def test_run_exodiff_check_fail(self):
+        # Setup
+        test = RegressionTest('fail_test', 'aperi-mech', 1, ['input.yaml'])
+        exodiff = ExodiffCheck('fail_test', 'exodiff', 'compare.exodiff', 'results.exo', 'bad_gold.exo', [])
 
-		# Setup
-		test = RegressionTest('success_test', 'aperi-mech', 1, ['input.yaml'], 'exodiff', 'compare.exodiff', 'results.exo', 'good_gold.exo', [])
+        # Run the executable and verify the return code
+        result = test.run()
+        self.assertTrue(result == 0)
 
-		# Execute
-		result = test.run()
+        # Run exodiff and verify the return code
+        result = exodiff.run()
+        self.assertFalse(result == 0)
 
-		# Verify
-		self.assertTrue(result)
+    def test_run_exodiff_check_success(self):
+        # Setup
+        test = RegressionTest('success_test', 'aperi-mech', 1, ['input.yaml'])
+        exodiff = ExodiffCheck('success_test', 'exodiff', 'compare.exodiff', 'results.exo', 'good_gold.exo', [])
 
-        # Change back to the original directory
-		os.chdir('../..')
+        # Run the executable and verify the return code
+        result = test.run()
+        self.assertTrue(result == 0)
+
+        # Run exodiff and verify the return code
+        result = exodiff.run()
+        self.assertTrue(result == 0)
 
 if __name__ == '__main__':
-	unittest.main()
+    unittest.main()

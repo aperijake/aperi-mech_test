@@ -1,0 +1,49 @@
+procedures:
+  - explicit_dynamics_procedure:
+      geometry:
+        mesh: non_existent_mesh.exo
+        parts:
+          - part:
+              set: block_1
+              formulation:
+                integration_scheme:
+                  strain_smoothing: ~
+                approximation_space:
+                  reproducing_kernel:
+                    kernel_radius_scale_factor: 0.03
+              material:
+                elastic:
+                  density: 2700.0 # kg / m^3
+                  #youngs_modulus: 78.2e9 # Pa, 78.2 GPa
+                  youngs_modulus: 38.1e9 # just scaling down a bit since there is no plasticity
+                  poissons_ratio: 0.3
+      initial_conditions:
+        - velocity:
+            sets:
+              - block_1
+            components:
+              Z: -373.0 # m/s
+      time_stepper:
+        direct_time_stepper:
+          time_increment: 0.00001
+          # time_end: 0.00001
+          time_end: 0.0005
+      output:
+        file: results.exo
+        time_start: 0
+        time_end: 1
+        time_increment: 0.00001
+      boundary_conditions:
+        - displacement:
+            sets:
+              - surface_1
+            components:
+              Z: 0.0
+            time_function:
+              ramp_function:
+                abscissa_values:
+                  - 0
+                  - 1
+                ordinate_values:
+                  - 0
+                  - 1

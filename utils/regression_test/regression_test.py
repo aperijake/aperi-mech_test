@@ -63,14 +63,55 @@ def _get_date_time():
     now = datetime.datetime.now()
     return now.strftime("%Y-%m-%d_%H-%M-%S")
 
+def _move_log_files(input_log_file, test_name):
+    # Move log_file to a unique name with the date and time
+    date_time = _get_date_time()
+    log_file_base = input_log_file.split('.')[0]
+    log_file = log_file_base + '_' + test_name + '_' + date_time + '.log'
+    os.rename(input_log_file, log_file)
+
+def _print_pass_fail(test_name, return_code, executable_time):
+    GREEN = '\033[92m'  # Green text
+    RED = '\033[91m'   # Red text
+    RESET = '\033[0m'  # Reset color
+
+    if return_code == 0:
+        print(f"{GREEN}    PASS:{RESET}    time(s): {executable_time:.4e}    test: {test_name:<20}")
+    else:
+        print(f"{RED}    FAIL:{RESET}    time(s): {executable_time:.4e}    test: {test_name:<20}")
+        print(f"        Return code: {return_code}")
 
 class RegressionTest:
 
-    def __init__(self, test_name, executable_path, num_procs, exe_args, exodiff_path, exodiff_file, exodiff_results_file, exodiff_gold_results_file, exodiff_args):
+    def __init__(self, test_name, executable_path, num_procs, exe_args):
         self.test_name = test_name
+        self.log_file = 'regression_test.log'
         self.executable_path = executable_path
         self.num_procs = num_procs
         self.exe_args = exe_args
+        self.executable_time = 0
+
+    def run(self):
+        _remove_file(self.log_file)
+        return_code = self._run()
+        _print_pass_fail(self.test_name, return_code, self.executable_time)
+        _move_log_files(self.log_file, self.test_name)
+        return return_code
+
+    def _run(self):
+        command_pre = ['mpirun', '-n', str(self.num_procs)]
+        # Time the executable
+        start_time = time.perf_counter()
+        return_code = _run_executable(command_pre, self.executable_path, self.exe_args, self.log_file)
+        end_time = time.perf_counter()
+        self.executable_time = end_time - start_time
+        return return_code
+
+class ExodiffCheck:
+
+    def __init__(self, test_name, exodiff_path, exodiff_file, exodiff_results_file, exodiff_gold_results_file, exodiff_args):
+        self.test_name = test_name
+        self.log_file = 'exodiff_check.log'
         self.exodiff_path = exodiff_path
         self.exodiff_file = exodiff_file
         self.exodiff_results_file = exodiff_results_file
@@ -79,48 +120,20 @@ class RegressionTest:
         self.executable_time = 0
 
     def run(self):
-        _remove_file('run_test.log')
-        _remove_file(self.exodiff_results_file)
-        return_code = self._run_executable()
-        if return_code == 0:
-            return_code = self._run_exodiff()
-        passed = self._check_return_code(return_code)
-        self._move_log_files()
-        return passed
+        _remove_file(self.log_file)
+        return_code = self._run()
+        _print_pass_fail(self.test_name, return_code, self.executable_time)
+        _move_log_files(self.log_file, self.test_name)
+        return return_code
 
-    def _move_log_files(self):
-        # Move run_test.log to a unique name with the date and time
-        date_time = _get_date_time()
-        log_file = self.test_name + '_' + date_time + '.log'
-        os.rename('run_test.log', log_file)
-
-    def _check_return_code(self, return_code):
-        GREEN = '\033[92m'  # Green text
-        RED = '\033[91m'   # Red text
-        RESET = '\033[0m'  # Reset color
-
-        passed = 0
-
-        if return_code == 0:
-            print(f"{GREEN}PASS:{RESET}    time(s): {self.executable_time:.4e}    test: {self.test_name:<20}")
-            passed = 1
-        else:
-            print(f"{RED}FAIL:{RESET}    time(s): {self.executable_time:.4e}    test: {self.test_name:<20}")
-            print(f"Return code: {return_code}")
-
-        return passed
-
-    def _run_executable(self):
-        command_pre = ['mpirun', '-n', str(self.num_procs)]
+    def _run(self):
+        command_pre = []
         # Time the executable
         start_time = time.perf_counter()
-        return_code = _run_executable(command_pre, self.executable_path, self.exe_args, 'run_test.log')
+        return_code = _run_executable(command_pre, self.exodiff_path, ['-f', self.exodiff_file, self.exodiff_results_file, self.exodiff_gold_results_file] + self.exodiff_args, self.log_file)
         end_time = time.perf_counter()
         self.executable_time = end_time - start_time
         return return_code
-
-    def _run_exodiff(self):
-        return _run_executable([], self.exodiff_path, ['-f', self.exodiff_file, self.exodiff_results_file, self.exodiff_gold_results_file] + self.exodiff_args, 'run_test.log')
 
 def _parse_arguments():
     # Define command line arguments
@@ -140,8 +153,11 @@ def _parse_arguments():
 
 def main():
     args = _parse_arguments()
-    regression_test = RegressionTest(args.name, args.executable_path, args.num_procs, args.exe_args, args.exodiff_path, args.exodiff_file, args.exodiff_args)
+    regression_test = RegressionTest(args.name+"_regression_test", args.executable_path, args.num_procs, args.exe_args)
     return_code = regression_test.run()
+    if return_code == 0:
+        exodiff_test = ExodiffCheck(args.name+"_exodiff_check", args.exodiff_path, args.exodiff_file, args.exodiff_results_file, args.exodiff_gold_file, args.exodiff_args)
+        return_code = exodiff_test.run()
     return return_code
 
 if __name__ == "__main__":
