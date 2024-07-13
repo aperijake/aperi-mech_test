@@ -95,7 +95,7 @@ def add_nodeset_and_fix_exo(out_file_base):
 if __name__ == "__main__":
 
     # Define the parameters
-    mesh_size = 0.01  # Define the desired mesh size
+    mesh_size = 0.02  # Define the desired mesh size
     height = 0.2346
     radius = 0.0391
 

@@ -1,0 +1,18 @@
+# Define common settings
+defaults: &defaults
+  num_processors: 1
+  input_file: input.yaml
+  exodiff:
+    - compare_file: compare.exodiff
+      gold_file: gold_results.exo
+      results_file: results.exo
+
+# List of tests using the defaults
+tests:
+  - <<: *defaults
+    hardware: cpu
+  - <<: *defaults
+    hardware: gpu
+  - <<: *defaults
+    num_processors: 4  # Override the default num_processors for this test
+    hardware: cpu

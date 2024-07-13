@@ -1,0 +1,57 @@
+
+#  *****************************************************************
+#             EXODIFF	(Version: 3.33) Modified: 2024-03-13
+#             Authors:  Richard Drake, rrdrake@sandia.gov           
+#                       Greg Sjaardema, gdsjaar@sandia.gov          
+#             Run on    2024/07/13   00:07:29 UTC
+#  *****************************************************************
+
+#  FILE 1: /home/azureuser/projects/aperi-mech_test/cylindrical_taylor_bar/regression/fem_strain_smoothing/gold_results.exo
+#   Title: IOSS Default Output Title
+#          Dim = 3, Nodes = 285, Elements = 904, Faces = 0, Edges = 0
+#          Element Blocks = 1, Face Blocks = 0, Edge Blocks = 0, Nodesets = 1, Sidesets = 0, Assemblies = 0
+#    Vars: Global = 0, Nodal = 18, Element = 1, Face = 0, Edge = 0, Nodeset = 0, Sideset = 0, Times = 2
+
+
+# ==============================================================
+#  NOTE: All node and element ids are reported as global ids.
+
+# NOTES:  - The min/max values are reporting the min/max in absolute value.
+#         - Time values (t) are 1-offset time step numbers.
+#         - Element block numbers are the block ids.
+#         - Node(n) and element(e) numbers are 1-offset.
+
+COORDINATES absolute 1.e-6    # min separation not calculated
+
+TIME STEPS relative 1.e-6 floor 0.0     # min:               0 @ t1 max:          0.0001 @ t2
+
+# No GLOBAL VARIABLES
+
+NODAL VARIABLES relative 1.e-6 floor 0.0
+	displacement_x         # min:               0 @ t1,n1	max:    0.0037303132 @ t2,n16
+	displacement_y         # min:               0 @ t1,n1	max:    0.0034884944 @ t2,n127
+	displacement_z         # min:               0 @ t1,n1	max:     0.037275041 @ t2,n210
+	acceleration_x         # min:               0 @ t1,n1	max:        21336627 @ t2,n229
+	acceleration_y         # min:               0 @ t1,n1	max:        33554769 @ t2,n29
+	acceleration_z         # min:               0 @ t1,n1	max:        10711345 @ t2,n48
+	force_x                # min:               0 @ t1,n1	max:       226751.51 @ t2,n276
+	force_y                # min:               0 @ t1,n1	max:       233764.41 @ t2,n259
+	force_z                # min:               0 @ t1,n1	max:       351701.62 @ t2,n233
+	mass_x                 # min:     0.001125266 @ t1,n3	max:     0.041543172 @ t1,n259
+	mass_y                 # min:     0.001125266 @ t1,n3	max:     0.041543172 @ t1,n259
+	mass_z                 # min:     0.001125266 @ t1,n3	max:     0.041543172 @ t1,n259
+	mass_from_elements_x   # min:     0.001125266 @ t1,n3	max:     0.041543172 @ t1,n259
+	mass_from_elements_y   # min:     0.001125266 @ t1,n3	max:     0.041543172 @ t1,n259
+	mass_from_elements_z   # min:     0.001125266 @ t1,n3	max:     0.041543172 @ t1,n259
+	velocity_x             # min:               0 @ t1,n1	max:       96.091629 @ t2,n200
+	velocity_y             # min:               0 @ t1,n1	max:       123.97411 @ t2,n32
+	velocity_z             # min:               0 @ t2,n2	max:             373 @ t1,n1
+
+# No NODESET VARIABLES
+
+# No SIDESET VARIABLES
+
+# No EDGE BLOCK VARIABLES
+
+# No FACE BLOCK VARIABLES
+

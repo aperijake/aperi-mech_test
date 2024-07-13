@@ -5,12 +5,18 @@ procedures:
         parts:
           - part:
               set: block_1
+              formulation:
+                integration_scheme:
+                  gauss_quadrature:
+                    integration_order: 1
+                approximation_space: 
+                  finite_element: ~
               material:
                 elastic:
-                  density: 2700.0 # kg / m^3
-                  #youngs_modulus: 78.2e9 # Pa, 78.2 GPa
-                  youngs_modulus: 38.1e9 # just scaling down a bit since there is no plasticity
-                  poissons_ratio: 0.3
+                 density: 2700.0 # kg / m^3
+                 #youngs_modulus: 78.2e9 # Pa, 78.2 GPa
+                 youngs_modulus: 38.1e9 # just scaling down a bit since there is no plasticity
+                 poissons_ratio: 0.3
       initial_conditions:
         - velocity:
             sets:
