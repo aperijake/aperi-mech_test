@@ -4,6 +4,7 @@ import time
 import argparse
 import yaml
 import sys
+import glob
 import subprocess
 
 # Script path
@@ -20,7 +21,8 @@ def get_inputs_from_yaml_node(yaml_node, test_name_prefix, build_dir):
         inputs['executable_path'] = build_dir + '/Release_gpu/aperi-mech'
     inputs['num_processors'] = yaml_node['num_processors']
     inputs['num_runs'] = yaml_node['num_runs']
-    inputs['tolerance_percent'] = yaml_node['tolerance_percent']
+    inputs['runtime_tolerance_percent'] = yaml_node['runtime_tolerance_percent']
+    inputs['memory_tolerance_percent'] = yaml_node['memory_tolerance_percent']
 
     return inputs
 
@@ -47,7 +49,8 @@ def run_performance_tests_from_directory(root_dir, build_dir):
                     command = ['python3', script_path+'/utils/performance_test/performance_test.py',
                                '--n', str(inputs['num_runs']),
                                '--np', str(inputs['num_processors']),
-                               '--tolerance', str(inputs['tolerance_percent']),
+                               '--time-tolerance', str(inputs['runtime_tolerance_percent']),
+                               '--memory-tolerance', str(inputs['memory_tolerance_percent']),
                                '--no-plot',
                                '--csv',
                                '--no-ask',
@@ -63,20 +66,39 @@ def run_performance_tests_from_directory(root_dir, build_dir):
             os.chdir(current_dir)
     return passing_tests, total_tests
 
+def clean_logs(root_dir):
+    for dirpath, _dirnames, filenames in os.walk(root_dir):
+        if 'performance.yaml' in filenames:
+            print("-----------------------------------")
+            print(f"Cleaning logs in {dirpath}")
+            # Use glob to find all files matching the pattern
+            for log_file in glob.glob(f"{dirpath}/regression*.log"):
+                os.remove(log_file)  # Remove each matching file
+            print("-----------------------------------\n")
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Run regression tests.')
     parser.add_argument('--directory', help='Directory root containing the tests. Will recursively search for test.yaml files.', default='.')
     parser.add_argument('--build_dir', help='Directory containing the build', default='/home/azureuser/projects/aperi-mech/build/')
+    parser.add_argument('--clean_logs', help='Clean logs in the directory', action='store_true')
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parse_arguments()
+
+    directory = os.path.abspath(args.directory)
+
+    # Just clean the logs and exit
+    if (args.clean_logs):
+        clean_logs(directory)
+        sys.exit(0)
+
     # full path to the build directory
     build_dir = os.path.abspath(args.build_dir)
 
     # time the regression tests
     start_time = time.perf_counter()
-    passing_tests, total_tests = run_performance_tests_from_directory(args.directory, build_dir)
+    passing_tests, total_tests = run_performance_tests_from_directory(directory, build_dir)
     end_time = time.perf_counter()
     print(f"Total time: {end_time - start_time:.4e} seconds")
 

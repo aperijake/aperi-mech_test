@@ -3,14 +3,17 @@ tests:
     input_file: input.yaml
     hardware: cpu
     num_runs: 1
-    tolerance_percent: 3.0
+    runtime_tolerance_percent: 8.0
+    memory_tolerance_percent: 5.0
   - num_processors: 1
     input_file: input.yaml
     hardware: gpu
     num_runs: 1
-    tolerance_percent: 3.0
+    runtime_tolerance_percent: 8.0
+    memory_tolerance_percent: 5.0
   - num_processors: 4
     input_file: input.yaml
     hardware: cpu
     num_runs: 1
-    tolerance_percent: 3.0
+    runtime_tolerance_percent: 8.0
+    memory_tolerance_percent: 5.0

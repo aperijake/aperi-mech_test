@@ -16,28 +16,30 @@ from regression_test import RegressionTest
 
 def run_once(test_name, executable_path, num_procs, executable_args):
     regression_test = RegressionTest(test_name, executable_path, num_procs, executable_args)
-    return_code = regression_test.run()
+    return_code, stats = regression_test.run()
     if return_code != 0:
         print("\033[91mFAIL\033[0m")
         sys.exit(1)
-    return regression_test.executable_time
+    return regression_test.executable_time, stats['peak_memory']
 
 def run(test_name, executable_path, num_procs, executable_args, num_runs, no_ask=False):
     run_times = []
+    peak_memory_values = []
 
     baseline_and_updated = get_baseline(runtime_file, no_ask)
     updated = baseline_and_updated['updated']
 
     for i in range(num_runs):
         print(f'Running executable {i+1}/{num_runs}')
-        run_time = run_once(test_name, executable_path, num_procs, executable_args)
+        run_time, peak_memory = run_once(test_name, executable_path, num_procs, executable_args)
+        peak_memory_values.append(peak_memory)
         run_times.append(run_time)
     
-    return {'value': np.nanmean(run_times), 'updated': updated}
+    return {'time': np.nanmean(run_times), 'updated': updated, 'peak_memory': np.nanmean(peak_memory_values)}
 
 def ask_to_set_baseline(no_ask=False):
     if no_ask:
-        return {'value': 0.0, 'updated': True}
+        return {'time': 0.0, 'updated': True, 'peak_memory': 0.0}
     set_baseline = False
 
     # Ask the user if they want to set the baseline
@@ -59,10 +61,10 @@ def ask_to_set_baseline(no_ask=False):
 
     if set_baseline:
         print('Setting the baseline runtime.')
-        return {'value': 0.0, 'updated': True}
+        return {'time': 0.0, 'updated': True, 'peak_memory': 0.0}
 
     print('Not setting the baseline runtime.')
-    return {'value': 0.0, 'updated': False}
+    return {'time': 0.0, 'updated': False, 'peak_memory': 0.0}
 
 def get_baseline(runtime_file, no_ask=False):
     # Get the baseline from the runtime file
@@ -90,20 +92,22 @@ def get_baseline(runtime_file, no_ask=False):
         print(df)
 
     # Find the last row where the platform gold standard is true
-    baseline = df.iloc[-1]['Average Runtime (s)']
+    baseline_runtime = df.iloc[-1]['Average Runtime (s)']
+    baseline_peak_memory = df.iloc[-1]['Peak Memory (MB)']
 
-    return {'value': baseline, 'updated': False}
+    return {'time': baseline_runtime, 'updated': False, 'peak_memory': baseline_peak_memory}
 
 def run_and_plot(test_name, executable_path, runtime_file, num_procs, executable_args, num_runs, file, live_plot, no_ask=False):
     run_times = []
 
     fig, ax = plt.subplots()
-    # Create the run_times np array and fill it with nan
+    # Create the run_times and peak_memory np array and fill it with nan
     run_times = np.nan * np.zeros(num_runs)
+    peak_memory_values = np.nan * np.zeros(num_runs)
 
     # Get the baseline runtime
     baseline_and_updated = get_baseline(runtime_file, no_ask)
-    baseline = baseline_and_updated['value']
+    baseline = baseline_and_updated['time']
     updated = baseline_and_updated['updated']
 
     def init():
@@ -118,8 +122,9 @@ def run_and_plot(test_name, executable_path, runtime_file, num_procs, executable
 
     def update(frame):
         print(f'Running executable {frame+1}/{num_runs}')
-        run_time = run_once(test_name, executable_path, num_procs, executable_args)
+        run_time, peak_memory = run_once(test_name, executable_path, num_procs, executable_args)
         run_times[frame] = run_time
+        peak_memory_values[frame] = peak_memory
         ax.clear()
         # Make each run be a bar, width 0.25
         ax.grid(True, which='both', linestyle='--', linewidth=0.5, color='black', alpha=0.7)
@@ -149,7 +154,7 @@ def run_and_plot(test_name, executable_path, runtime_file, num_procs, executable
             update(frame)
         plt.savefig(file)
     
-    return {'value': np.nanmean(run_times), 'updated': updated}
+    return {'time': np.nanmean(run_times), 'updated': updated, 'peak_memory': np.nanmean(peak_memory_values)}
 
 def plot_latest_vs_history(runtime_file, plot_file):
     df = pd.read_csv(runtime_file)
@@ -175,7 +180,7 @@ def plot_latest_vs_history(runtime_file, plot_file):
     plt.savefig(plot_file)
 
 def add_to_csv(runtime_file, average_runtime):
-    columns = ['Date', 'Time', 'Average Runtime (s)', 'Executable Info', 'Release', 'Version', 'Machine', 'Platform Gold Standard']
+    columns = ['Date', 'Time', 'Average Runtime (s)', 'Peak Memory (MB)', 'Executable Info', 'Release', 'Version', 'Machine', 'Platform Gold Standard']
     # Create the file if it doesn't exist
     if not os.path.exists(runtime_file):
         df = pd.DataFrame(columns=columns)
@@ -198,7 +203,7 @@ def add_to_csv(runtime_file, average_runtime):
     executable_info = subprocess.run([args.executable_path, '--version'], capture_output=True, text=True).stdout.strip()
 
     # Create a DataFrame with the new data
-    df = pd.DataFrame([[date, now_time, average_runtime['value'], executable_info] + machine_info + [average_runtime['updated']]], columns=columns)
+    df = pd.DataFrame([[date, now_time, average_runtime['time'], average_runtime['peak_memory'], executable_info] + machine_info + [average_runtime['updated']]], columns=columns)
 
     # Append the new data to the CSV file
     df.to_csv(runtime_file, mode='a', header=False, index=False)
@@ -209,7 +214,8 @@ if __name__ == "__main__":
     parser.add_argument('executable_args', type=str, nargs='+', help='Arguments to pass to the executable')
     parser.add_argument('--n', type=int, default=10, help='Number of times to run the executable')
     parser.add_argument('--np', type=int, default=1, help='Number of processors to run the executable with')
-    parser.add_argument('--tolerance', type=float, default=3.0, help='Tolerance for the percentage difference')
+    parser.add_argument('--time-tolerance', type=float, default=3.0, help='Tolerance for the percentage difference in run time')
+    parser.add_argument('--memory-tolerance', type=float, default=3.0, help='Tolerance for the percentage difference in peak memory')
     parser.add_argument('--no-plot', dest='plot', action='store_false', default=True, help='Do not plot the run times')
     parser.add_argument('--live-plot', dest='live_plot', action='store_true', default=False, help='Live plot the run times')
     parser.add_argument('--csv', dest='csv', action='store_true', default=False, help='Save the run times to the "runtime.csv" file')
@@ -224,7 +230,7 @@ if __name__ == "__main__":
     plot_file = 'benchmark_' + test_name + '.png'
     history_plot_file = 'history_' + test_name + '.png'
 
-    average_runtime = {0.0, False}
+    average_runtime = {0.0, False, 0.0}
     if args.plot:
         average_runtime = run_and_plot(test_name, args.executable_path, runtime_file, args.np, args.executable_args, args.n, plot_file, args.live_plot, args.no_ask)
     else:
@@ -239,24 +245,41 @@ if __name__ == "__main__":
     if args.plot:
         plot_latest_vs_history(runtime_file, history_plot_file)
 
-    baseline = get_baseline(runtime_file, args.no_ask)['value']
-    print(f'Average runtime:  {average_runtime["value"]:.2f} seconds')
+    baseline = get_baseline(runtime_file, args.no_ask)
+    baseline_runtime = baseline['time']
+    baseline_memory = baseline['peak_memory']
+    print(f'Average runtime:  {average_runtime["time"]:.2f} seconds')
+    print(f'Peak memory: {average_runtime["peak_memory"]:.2f} MB')
 
     if average_runtime['updated']:
-        print('The baseline runtime has been updated.')
+        print('The baseline runtime and peak memory have been updated.')
         print("\033[92mPASS\033[0m")
         sys.exit(0)
     else:
-        percentage_difference = ((average_runtime['value'] - baseline) / baseline) * 100
-        print(f'Baseline runtime: {baseline:.2f} seconds')
+        # Check if the average runtime is within the tolerance
+        percentage_difference = ((average_runtime['time'] - baseline_runtime) / baseline_runtime) * 100
+        print(f'Baseline runtime: {baseline_runtime:.2f} seconds')
         print(f'Percentage difference: {percentage_difference:.2f}%')
-        if abs(percentage_difference) > args.tolerance:
-            print(f'The percentage difference is greater than the tolerance of {args.tolerance}.')
-            print(f'Acceptable range: [{baseline*(1-args.tolerance/100.0):.2f}, {baseline*(1+args.tolerance/100.0):.2f}]')
+        return_code = 0
+        if abs(percentage_difference) > args.time_tolerance:
+            print(f'The percentage difference is greater than the tolerance of {args.time_tolerance}.')
+            print(f'Acceptable range: [{baseline_runtime*(1-args.time_tolerance/100.0):.2f}, {baseline_runtime*(1+args.time_tolerance/100.0):.2f}]')
             print ("\033[91mFAIL\033[0m")
-            sys.exit(1)
+            return_code = 1
         else:
-            print(f'The percentage difference is within the tolerance of {args.tolerance}.')
-            print(f'Acceptable range: [{baseline*(1-args.tolerance/100.0):.2f}, {baseline*(1+args.tolerance/100.0):.2f}]')
+            print(f'The percentage difference is within the tolerance of {args.time_tolerance}.')
+            print(f'Acceptable range: [{baseline_runtime*(1-args.time_tolerance/100.0):.2f}, {baseline_runtime*(1+args.time_tolerance/100.0):.2f}]')
             print("\033[92mPASS\033[0m")
-            sys.exit(0)
+
+        # Check if the peak memory is within the tolerance
+        upper_limit = baseline_memory * (1.0 + args.memory_tolerance / 100.0)
+        if average_runtime['peak_memory'] > upper_limit:
+            print(f"Peak memory ({average_runtime['peak_memory']:.2f} MB) exceeded the gold peak memory ({baseline_memory:.2f} MB) by more than {args.memory_tolerance}%")
+            print(f"Upper limit: {upper_limit:.2f} MB")
+            print("\033[91mFAIL\033[0m")
+            return_code = 1
+        else:
+            print(f"Peak memory ({average_runtime['peak_memory']:.2f} MB) is within the tolerance of {args.memory_tolerance}% of the gold peak memory ({baseline_memory:.2f} MB)")
+            print(f"Upper limit: {upper_limit:.2f} MB")
+            print("\033[92mPASS\033[0m")
+        sys.exit(return_code)
