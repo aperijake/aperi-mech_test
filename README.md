@@ -1,5 +1,7 @@
 # aperi-mech_test
 
+NOTE: This repo is dead and is just around for parts. 
+
 Regression tests for [aper-mech](https://github.com/aperijake/aperi-mech), an open-source platform for computational mechanics.
 
 ## Prerequisites
